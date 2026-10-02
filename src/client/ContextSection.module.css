@@ -1,22 +1,43 @@
-.page { max-width: 960px; margin: 0 auto; padding: 0 clamp(24px,4vw,48px) 48px; color: var(--dsw-alias-label-primary); font-size: 14px; }
-.header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding-top: 24px; margin-bottom: 20px; }
-.header h2 { margin: 0; font-size: 20px; font-weight: 500; }
-.header p { margin: 8px 0 0; color: var(--dsw-alias-label-secondary); }
+/*
+ * The section renders straight into the settings column: that column already
+ * owns the 24px inset and the scroll, so this page adds no second width,
+ * centring or side padding of its own — the shape every built-in settings page
+ * has (General, Plugins, Service Manager). Only the vertical rhythm is this
+ * page's: a 20px stack, the same one the Service Manager page uses.
+ */
+.page { display: flex; flex-direction: column; gap: 20px; width: 100%; color: var(--dsw-alias-label-primary); font-size: 13px; }
+
+.header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.header h2 { margin: 0 0 6px; font-size: 17px; font-weight: 600; }
+.header p { margin: 0; color: var(--dsw-alias-label-tertiary); font-size: 12px; line-height: 1.6; }
 .refresh { flex: none; white-space: nowrap; }
-.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 18px; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .pickerText { max-width: 180px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .search { flex: 1; min-width: 180px; }
-.list { display: grid; gap: 10px; margin-top: 16px; }
-.row { display: flex; justify-content: space-between; align-items: center; gap: 16px; min-width: 0; padding: 14px 16px; border: .5px solid var(--dsw-alias-border-l3); border-radius: 12px; background: var(--dsw-alias-bg-layer-1); }
+
+/*
+ * Underline tabs, copied from the built-in Plugins page: the settings dialog
+ * has no segmented-pill strip anywhere, so a pill track here would read as a
+ * control from another product.
+ */
+.tabs { display: flex; align-items: flex-end; gap: 22px; border-bottom: .5px solid var(--dsw-alias-border-l2); }
+.tab { position: relative; border: 0; padding: 7px 1px 9px; background: transparent; color: var(--dsw-alias-label-tertiary); font: inherit; font-size: 13px; line-height: 20px; cursor: pointer; }
+.tab:hover, .tab[data-active='true'] { color: var(--dsw-alias-label-primary); }
+.tab[data-active='true']::after, .tab:focus-visible::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; border-radius: 2px 2px 0 0; background: var(--dsw-alias-label-primary); content: ''; }
+.tab:focus-visible { outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary)); outline-offset: 2px; border-radius: 2px; color: var(--dsw-alias-label-primary); }
+
+.list { display: flex; flex-direction: column; gap: 10px; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 16px; min-width: 0; padding: 12px 14px; border: .5px solid var(--dsw-alias-border-l2); border-radius: 10px; background: var(--dsw-alias-bg-layer-1); }
 .row > button { flex: none; white-space: nowrap; }
 .rowBody { min-width: 0; }
-.rowBody strong { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
-.rowBody p { margin: 4px 0; color: var(--dsw-alias-label-secondary); overflow-wrap: anywhere; }
-.meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; font-size: 12px; color: var(--dsw-alias-label-tertiary); }
-.hint { color: var(--dsw-alias-label-secondary); font-size: 12px; line-height: 18px; }
-.empty { padding: 36px 16px; color: var(--dsw-alias-label-tertiary); text-align: center; }
-.error { color: var(--dsw-alias-state-error-primary); overflow-wrap: anywhere; }
-.notice { color: var(--dsw-alias-state-success-primary); }
+.rowBody strong { font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.rowBody p { margin: 4px 0 0; color: var(--dsw-alias-label-secondary); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 6px; font-size: 12px; color: var(--dsw-alias-label-tertiary); }
+.hint { margin: 0; color: var(--dsw-alias-label-tertiary); font-size: 12px; line-height: 1.6; }
+.empty { padding: 32px 0; color: var(--dsw-alias-label-tertiary); text-align: center; }
+.error { margin: 0; color: var(--dsw-alias-state-error-primary); overflow-wrap: anywhere; }
+.notice { margin: 0; color: var(--dsw-alias-state-success-primary); }
 .editor, .preview { box-sizing: border-box; width: min(700px, 100%); min-height: 280px; max-height: 60vh; overflow: auto; padding: 12px; border: .5px solid var(--dsw-alias-border-l2); border-radius: 8px; background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); font: 12px/1.5 var(--ds-font-family-code); white-space: pre-wrap; overflow-wrap: anywhere; }
 .editor:focus { outline: 2px solid var(--dsw-alias-state-business-primary); }
 @media (max-width: 560px) { .header { flex-direction: column; } .row { align-items: flex-start; } }

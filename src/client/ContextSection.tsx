@@ -1,5 +1,5 @@
-import { useEffect, useId, useState } from 'react'
-import { Button, Input, Menu, Modal, SegmentedTabs, Tag, IconChevronDownOutlineRegular, fileSizeText } from '@deepseek-ai/dsh-client-ui-primitives'
+import { useEffect, useId, useRef, useState } from 'react'
+import { Button, Input, Menu, Modal, Tag, IconChevronDownOutlineRegular, fileSizeText } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ContextRequest, ContextView, DocumentRequest, DocumentRow, DocumentValue, PromptRow, SaveDocumentRequest } from '../types.ts'
 import type { ContextKey } from './locales.ts'
@@ -39,6 +39,10 @@ export function ContextSection(props: Props) {
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
   const tabId = useId()
+  // Keyboard navigation moves focus as well as selection, so the strip keeps
+  // each button's node. The strip is the settings dialog's own underline
+  // pattern (the one the built-in Plugins page draws), not a segmented track.
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
   useEffect(() => {
     let active = true
     setLoading(true); setError('')
@@ -83,8 +87,36 @@ export function ContextSection(props: Props) {
         onChange={id => { setPresetId(id); setDocument(null); setPrompt(null) }} />
       <Input className={css.search ?? ''} aria-label={t('search')} placeholder={t('search')} value={query} onChange={event => setQuery(event.currentTarget.value)} />
     </div>
-    <SegmentedTabs<Tab> label={t('nav')} value={tab} onChange={setTab} items={tabs.map(value => ({ value, label: t(value),
-      id: `${tabId}-${value}-tab`, panelId: `${tabId}-${value}-panel` })) as [{ value: Tab; label: string; id: string; panelId: string }, ...{ value: Tab; label: string; id: string; panelId: string }[]]} />
+    <div className={css.tabs} role="tablist" aria-label={t('nav')}>
+      {tabs.map((value, index) => <button
+        key={value}
+        ref={element => { tabRefs.current[index] = element }}
+        id={`${tabId}-${value}-tab`}
+        type="button"
+        role="tab"
+        className={css.tab}
+        aria-selected={tab === value}
+        aria-controls={`${tabId}-${value}-panel`}
+        data-active={tab === value ? 'true' : undefined}
+        tabIndex={tab === value ? 0 : -1}
+        onClick={() => setTab(value)}
+        onKeyDown={event => {
+          let next: number
+          switch (event.key) {
+            case 'ArrowRight': next = (index + 1) % tabs.length; break
+            case 'ArrowLeft': next = (index - 1 + tabs.length) % tabs.length; break
+            case 'Home': next = 0; break
+            case 'End': next = tabs.length - 1; break
+            default: return
+          }
+          event.preventDefault()
+          const nextValue = tabs[next] as Tab
+          const nextButton = tabRefs.current[next] as HTMLButtonElement
+          setTab(nextValue)
+          nextButton.focus()
+        }}
+      >{t(value)}</button>)}
+    </div>
     {loading && <p role="status" className={css.hint}>{t('loading')}</p>}
     {error && !document && <p role="alert" className={css.error}>{error}</p>}
     {notice && <p role="status" className={css.notice}>{notice}</p>}
