@@ -1,0 +1,22 @@
+.page { max-width: 960px; margin: 0 auto; padding: 0 clamp(24px,4vw,48px) 48px; color: var(--dsw-alias-label-primary); font-size: 14px; }
+.header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding-top: 24px; margin-bottom: 20px; }
+.header h2 { margin: 0; font-size: 20px; font-weight: 500; }
+.header p { margin: 8px 0 0; color: var(--dsw-alias-label-secondary); }
+.refresh { flex: none; white-space: nowrap; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 18px; }
+.pickerText { max-width: 180px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.search { flex: 1; min-width: 180px; }
+.list { display: grid; gap: 10px; margin-top: 16px; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 16px; min-width: 0; padding: 14px 16px; border: .5px solid var(--dsw-alias-border-l3); border-radius: 12px; background: var(--dsw-alias-bg-layer-1); }
+.row > button { flex: none; white-space: nowrap; }
+.rowBody { min-width: 0; }
+.rowBody strong { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.rowBody p { margin: 4px 0; color: var(--dsw-alias-label-secondary); overflow-wrap: anywhere; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; font-size: 12px; color: var(--dsw-alias-label-tertiary); }
+.hint { color: var(--dsw-alias-label-secondary); font-size: 12px; line-height: 18px; }
+.empty { padding: 36px 16px; color: var(--dsw-alias-label-tertiary); text-align: center; }
+.error { color: var(--dsw-alias-state-error-primary); overflow-wrap: anywhere; }
+.notice { color: var(--dsw-alias-state-success-primary); }
+.editor, .preview { box-sizing: border-box; width: min(700px, 100%); min-height: 280px; max-height: 60vh; overflow: auto; padding: 12px; border: .5px solid var(--dsw-alias-border-l2); border-radius: 8px; background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); font: 12px/1.5 var(--ds-font-family-code); white-space: pre-wrap; overflow-wrap: anywhere; }
+.editor:focus { outline: 2px solid var(--dsw-alias-state-business-primary); }
+@media (max-width: 560px) { .header { flex-direction: column; } .row { align-items: flex-start; } }
