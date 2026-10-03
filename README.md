@@ -2,7 +2,7 @@
 
 [中文](README.zh.md)
 
-A standalone DeepSeek Harness plugin. Select a workspace and Agent in Settings to inspect Skills, rule and prompt files, and assembled system prompt sections. Search the list, inspect each file's source, description, size, and full content.
+Inspect and edit a workspace's Skills, rules, and assembled prompt context in DeepSeek Harness. Select a workspace and Agent in Settings to inspect Skills, rule and prompt files, and assembled system prompt sections. Search the list, inspect each file's source, description, size, and full content.
 
 ## Install
 
