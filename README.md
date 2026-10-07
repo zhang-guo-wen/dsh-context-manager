@@ -6,13 +6,13 @@ Inspect and edit a workspace's Skills, rules, and assembled prompt context in De
 
 ## Install
 
-This package is under local development and is not published to npm. Build it, install it from its absolute local path, and restart Harness:
+Install the public npm package, then restart Harness:
 
 ```sh
-npm ci
-npm run build
-npx @deepseek-ai/dsh plugin --profile web add <absolute path to this directory>
+npx @deepseek-ai/dsh plugin --profile web add @guowenzhang/dsh-context-manager
 ```
+
+For local development, run `npm ci` and `npm run build`, then use the directory's absolute path instead of the package name.
 
 ## Editing
 

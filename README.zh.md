@@ -6,13 +6,13 @@
 
 ## 安装
 
-此包目前仅在本地开发，尚未发布到 npm。构建后从本地目录安装，并重启 Harness：
+安装公开的 npm 包后，重启 Harness：
 
 ```sh
-npm ci
-npm run build
-npx @deepseek-ai/dsh plugin --profile web add <本目录的绝对路径>
+npx @deepseek-ai/dsh plugin --profile web add @guowenzhang/dsh-context-manager
 ```
+
+本地开发时先运行 `npm ci` 和 `npm run build`，再用目录的绝对路径替代包名安装。
 
 ## 编辑与生效
 
