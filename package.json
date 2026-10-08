@@ -8,7 +8,9 @@
   "exports": {
     ".": "./lib/index.mjs",
     "./client": "./lib/client.js",
-    "./cordis.patch.yml": "./cordis.patch.yml"
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json",
+    "./locale/*": "./locale/*"
   },
   "engines": {
     "node": ">=22",
@@ -31,6 +33,7 @@
     }
   },
   "files": [
+    "locale",
     "lib",
     "cordis.patch.yml",
     "README.md",
@@ -38,6 +41,7 @@
     "LICENSE"
   ],
   "scripts": {
+    "test:metadata": "node --test tests/plugin-metadata.test.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "build": "tsdown -c tsdown.config.ts && node build-client.mjs"

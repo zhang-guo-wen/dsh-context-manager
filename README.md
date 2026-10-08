@@ -4,6 +4,8 @@
 
 Inspect and edit a workspace's Skills, rules, and assembled prompt context in DeepSeek Harness. Select a workspace and Agent in Settings to inspect Skills, rule and prompt files, and assembled system prompt sections. Search the list, inspect each file's source, description, size, and full content.
 
+In the plugin list, display names and descriptions follow the Harness language setting in English or Chinese (English is the default fallback); English names use the package name without its npm scope, Chinese names describe the purpose, and installation still uses the unchanged real package name.
+
 ## Install
 
 Install the public npm package, then restart Harness:

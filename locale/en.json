@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "dsh-context-manager",
+    "description": "Inspect workspace skills, rules and assembled prompt context, and edit workspace-owned context files."
+  }
+}
