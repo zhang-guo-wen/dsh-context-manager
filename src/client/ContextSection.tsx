@@ -1,5 +1,5 @@
-import { useEffect, useId, useRef, useState } from 'react'
-import { Button, Input, Menu, Modal, Tag, IconChevronDownOutlineRegular, fileSizeText } from '@deepseek-ai/dsh-client-ui-primitives'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { Button, Input, Menu, Modal, Tag, Toast, IconChevronDownOutlineRegular, fileSizeText } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ContextRequest, ContextView, DocumentRequest, DocumentRow, DocumentValue, PromptRow, SaveDocumentRequest } from '../types.ts'
 import type { ContextKey } from './locales.ts'
@@ -12,6 +12,12 @@ export interface ContextActions {
 }
 type Props = PropsRuntime<'settings.section'> & PropsLocale<'settings.contextManager'> & InjectFace<ContextActions>
 type Tab = 'skill' | 'rule' | 'prompt' | 'system'
+/** One floating result report. `seq` keys the mounted `Toast`, so reporting the
+ * same copy again restarts its hold and fade instead of extending the running
+ * cycle. `kind` picks the success glyph and the longer failure hold. */
+interface ToastReport { text: string; seq: number; kind: 'success' | 'error' }
+/** A failure report names what broke, so it is held longer than the host default. */
+const FAILURE_HOLD_MS = 6000
 
 function Picker({ label, value, options, onChange }: {
   label: string; value: string; options: { id: string; label: string }[]; onChange(value: string): void
@@ -52,8 +58,11 @@ export function ContextSection(props: Props) {
   const [query, setQuery] = useState('')
   const [revision, setRevision] = useState(0)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
+  const [toast, setToast] = useState<ToastReport | null>(null)
+  // The floating report is one-shot but the retry entry is not, so whether the
+  // last read failed outlives the banner it announced.
+  const [readFailed, setReadFailed] = useState(false)
+  const toastSeq = useRef(0)
   const [document, setDocument] = useState<DocumentValue | null>(null)
   const [prompt, setPrompt] = useState<PromptRow | null>(null)
   const [draft, setDraft] = useState('')
@@ -63,35 +72,50 @@ export function ContextSection(props: Props) {
   // each button's node. The strip is the settings dialog's own underline
   // pattern (the one the built-in Plugins page draws), not a segmented track.
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
+  // The read effect reports a failure with the locale-bound `t`, but keying the
+  // effect on it would re-read the roster whenever the dictionary binding moves.
+  const latestT = useRef(t)
+  latestT.current = t
+  /** Report a settled action result in the floating banner; never a busy state. */
+  const report = (text: string, kind: 'success' | 'error' = 'success') => {
+    setToast({ text, seq: ++toastSeq.current, kind })
+  }
+  /** A re-read owns no floating report: its visible state is the roster itself. */
+  const reRead = useCallback(() => { setRevision(value => value + 1) }, [])
   useEffect(() => {
     let active = true
-    setLoading(true); setError('')
+    setLoading(true)
+    // A re-read clears the failure it is about to answer, but not a save result
+    // this section reported: saving re-reads the roster, and the success banner
+    // has to survive that.
+    setToast(current => current?.kind === 'error' ? null : current)
     void props.listContext({ ...(workspaceId ? { workspaceId } : {}), ...(presetId ? { presetId } : {}) })
-      .then(result => { if (active) { setView(result); if (!workspaceId && result.workspaceId) setWorkspaceId(result.workspaceId) } })
-      .catch(failure => { if (active) setError(String(failure)) })
+      .then(result => { if (active) { setView(result); setReadFailed(false); if (!workspaceId && result.workspaceId) setWorkspaceId(result.workspaceId) } })
+      .catch(failure => { if (active) { setReadFailed(true); report(`${latestT.current('readError')}: ${String(failure)}`, 'error') } })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [props.listContext, workspaceId, presetId, revision])
 
   const openDocument = async (row: DocumentRow) => {
-    setError(''); setNotice('')
+    setToast(null)
     try {
       const result = await props.readDocument({ workspaceId, ...(presetId ? { presetId } : {}), kind: row.kind, id: row.id })
       setDocument(result); setDraft(result.content)
-    } catch (failure) { setError(String(failure)) }
+    } catch (failure) { report(`${t('readError')}: ${String(failure)}`, 'error') }
   }
   const save = async () => {
     if (!document || busy) return
-    setBusy(true); setError('')
+    setBusy(true)
     try {
       const result = await props.saveDocument({ workspaceId, ...(presetId ? { presetId } : {}),
         kind: document.kind, id: document.id, content: draft, revision: document.revision })
-      setDocument(result); setNotice(t('saved')); setRevision(value => value + 1)
-    } catch (failure) { setError(String(failure)) }
+      setDocument(result); report(t('saved')); setRevision(value => value + 1)
+    } catch (failure) { report(`${t('saveError')}: ${String(failure)}`, 'error') }
     finally { setBusy(false) }
   }
-  const close = () => { if (!busy) { setDocument(null); setPrompt(null); setError('') } }
-  const reRead = () => { setRevision(value => value + 1) }
+  // Closing reports nothing itself, but a report about the document that just
+  // went away must not outlive it.
+  const close = () => { if (!busy) { setDocument(null); setPrompt(null); setToast(null) } }
   const searched = query.trim() !== ''
   const matches = (text: string) => text.toLowerCase().includes(query.toLowerCase())
   // The pools before the query, so an empty list can tell "this source has
@@ -180,26 +204,31 @@ export function ContextSection(props: Props) {
         ? <EmptyState title={t('noMatch')} hint={t('noMatchHint')} />
         : <EmptyState title={t('empty')} hint={t('emptyHint')} />)}
     </section>}
-    {/* Transient state sits below the roster, so a refresh or a failure never
-        moves the rows the reader is looking at. */}
+    {/* Transient state sits below the roster, so a refresh never moves the rows
+        the reader is looking at. */}
     {loading && view !== null && <p role="status" className={css.hint}>{t('refreshing')}</p>}
-    {error && !dialogOpen && <div className={css.failure}>
-      <p role="alert">{error}</p>
-      <Button variant="outline" size="sm" onClick={reRead}>{t('retry')}</Button>
-    </div>}
-    {notice && !dialogOpen && <p role="status" className={css.notice}>{notice}</p>}
+    {/* Read failures keep the last roster and their retry here, where the
+        roster is; the report itself floats, so a long list cannot scroll it
+        out of view and the settings dialog's mask cannot cover it. */}
+    {readFailed && <div className={css.retry}><Button variant="outline" size="sm" onClick={reRead}>{t('retry')}</Button></div>}
+    {/* Keyed by `seq`, so reporting the same copy twice restarts the cycle;
+        `onDone` clears only the report this banner was mounted for. A success
+        takes the host default hold, the one the archive banner uses, so all
+        three plugins report success for the same span; only a failure — which
+        names what broke — is held longer. */}
+    {toast && (toast.kind === 'success'
+      ? <Toast key={toast.seq} text={toast.text} tone="success"
+        onDone={() => { setToast(current => current?.seq === toast.seq ? null : current) }} />
+      : <Toast key={toast.seq} text={toast.text} holdMs={FAILURE_HOLD_MS}
+        onDone={() => { setToast(current => current?.seq === toast.seq ? null : current) }} />)}
     <Modal open={dialogOpen} title={document?.name ?? prompt?.name ?? ''} closeLabel={t('close')} onClose={close}
       footer={<>
-        {/* The save result belongs beside the action that produced it: the page
-            level notice is behind the mask while this dialog is open. */}
-        {notice && <span role="status" className={css.notice}>{notice}</span>}
         <Button variant="outline" onClick={close}>{t('close')}</Button>
         {document?.editable && <Button onClick={() => { void save() }} disabled={busy || draft === document.content}>{t(busy ? 'saving' : 'save')}</Button>}</>}>
       {document?.editable ? <textarea className={css.editor} aria-label={document.name} value={draft} disabled={busy}
         onChange={event => setDraft(event.currentTarget.value)} />
         : <pre className={css.preview}>{document?.content ?? prompt?.text ?? ''}</pre>}
       {document && !document.editable && <p className={css.hint}>{t('readOnly')}</p>}
-      {error && dialogOpen && <p role="alert" className={css.error}>{error}</p>}
     </Modal>
   </div>
 }

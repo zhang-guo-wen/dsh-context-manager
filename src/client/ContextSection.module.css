@@ -60,13 +60,10 @@
 .empty { margin: 0; padding: 32px 0 0; color: var(--dsw-alias-label-tertiary); text-align: center; font: var(--dsw-font-xs-13); }
 .emptyHint { margin: 0; padding: 4px 0 32px; color: var(--dsw-alias-label-tertiary); text-align: center; font: var(--dsw-font-xxs-12); }
 
-.error { margin: 0; color: var(--dsw-alias-state-error-primary); font: var(--dsw-font-xxs-12); overflow-wrap: anywhere; }
-.notice { margin: 0; color: var(--dsw-alias-state-success-primary); font: var(--dsw-font-xxs-12); }
-
-/* A failed read keeps the last rendered roster and reports itself here, with
-   the retry beside it. */
-.failure { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.failure p { margin: 0; color: var(--dsw-alias-state-error-primary); font: var(--dsw-font-xs-13); overflow-wrap: anywhere; }
+/* A failed read keeps the last rendered roster and offers Retry below it; the
+   failure copy itself floats in the host Toast, out of the scroll and above the
+   settings dialog's mask. */
+.retry { display: flex; }
 
 /* First paint: placeholder cards shaped like the rows they replace. */
 .skeletonList { display: flex; flex-direction: column; gap: 10px; }
