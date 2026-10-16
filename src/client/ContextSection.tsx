@@ -23,6 +23,26 @@ function Picker({ label, value, options, onChange }: {
       onClick={() => setOpen(value => !value)}><span className={css.pickerText}>{options.find(option => option.id === value)?.label ?? label}</span><IconChevronDownOutlineRegular size={14} /></Button>} />
 }
 
+/**
+ * First-paint placeholder shaped like the rows it replaces, so the roster does
+ * not reflow when the read answers. The status line stays outside the
+ * placeholder's `aria-hidden` subtree.
+ */
+function ContextSkeleton({ label }: { label: string }) {
+  return <>
+    <p className={css.visuallyHidden} role="status">{label}</p>
+    <div className={css.skeletonList} aria-hidden="true">
+      {[0, 1, 2].map(index => <div key={index} className={css.skeletonRow}>
+        <span className={css.skeletonBar} /><span className={css.skeletonBar} /></div>)}
+    </div>
+  </>
+}
+
+/** One empty state: why this list is empty, then what to do about it. */
+function EmptyState({ title, hint }: { title: string; hint: string }) {
+  return <><p className={css.empty}>{title}</p><p className={css.emptyHint}>{hint}</p></>
+}
+
 export function ContextSection(props: Props) {
   const { t } = props
   const [view, setView] = useState<ContextView | null>(null)
@@ -71,15 +91,27 @@ export function ContextSection(props: Props) {
     finally { setBusy(false) }
   }
   const close = () => { if (!busy) { setDocument(null); setPrompt(null); setError('') } }
-  const rows = (view?.documents ?? []).filter(row => tab === 'skill' ? row.kind === 'skill'
+  const reRead = () => { setRevision(value => value + 1) }
+  const searched = query.trim() !== ''
+  const matches = (text: string) => text.toLowerCase().includes(query.toLowerCase())
+  // The pools before the query, so an empty list can tell "this source has
+  // nothing" apart from "the search hid everything".
+  const docPool = (view?.documents ?? []).filter(row => tab === 'skill' ? row.kind === 'skill'
     : tab === 'rule' ? row.kind === 'rule' : tab === 'prompt' && (row.kind === 'prompt-file' || row.kind === 'workspace-prompt'))
-    .filter(row => `${row.name} ${row.description} ${row.source}`.toLowerCase().includes(query.toLowerCase()))
-  const sections = (view?.promptSections ?? []).filter(row => `${row.name} ${row.text}`.toLowerCase().includes(query.toLowerCase()))
-  const runtime = (view?.runtimeContexts ?? []).filter(row => `${row.name} ${row.text}`.toLowerCase().includes(query.toLowerCase()))
+  const rows = docPool.filter(row => matches(`${row.name} ${row.description} ${row.source}`))
+  const sectionPool = view?.promptSections ?? []
+  const runtimePool = view?.runtimeContexts ?? []
+  const sections = sectionPool.filter(row => matches(`${row.name} ${row.text}`))
+  const runtime = runtimePool.filter(row => matches(`${row.name} ${row.text}`))
+  const systemRows = (view?.systemPrompt ? 1 : 0)
+  const pool = tab === 'system' ? sectionPool.length + runtimePool.length + systemRows : docPool.length
+  const shown = tab === 'system' ? sections.length + runtime.length + systemRows : rows.length
+  const noWorkspace = view !== null && view.workspaces.length === 0
+  const dialogOpen = document !== null || prompt !== null
   const tabs: Tab[] = ['skill', 'rule', 'prompt', 'system']
   return <div className={css.page}>
     <header className={css.header}><div><h2>{t('title')}</h2><p>{t('subtitle')}</p></div>
-      <Button className={css.refresh} variant="outline" size="sm" onClick={() => setRevision(value => value + 1)}>{t('refresh')}</Button></header>
+      <Button className={css.refresh} variant="outline" size="sm" disabled={loading} onClick={reRead}>{t('refresh')}</Button></header>
     <div className={css.controls}>
       <Picker label={t('workspace')} value={workspaceId} options={(view?.workspaces ?? []).map(row => ({ id: row.id, label: row.title }))}
         onChange={id => { setWorkspaceId(id); setDocument(null); setPrompt(null) }} />
@@ -117,20 +149,22 @@ export function ContextSection(props: Props) {
         }}
       >{t(value)}</button>)}
     </div>
-    {loading && <p role="status" className={css.hint}>{t('loading')}</p>}
-    {error && !document && <p role="alert" className={css.error}>{error}</p>}
-    {notice && <p role="status" className={css.notice}>{notice}</p>}
-    {!loading && !view?.workspaces.length && <p className={css.empty}>{t('emptyWorkspace')}</p>}
-    {view && tab !== 'system' && <section role="tabpanel" id={`${tabId}-${tab}-panel`} aria-labelledby={`${tabId}-${tab}-tab`}>
+    {/* First paint is a placeholder shaped like the roster; a refresh keeps the
+        roster it already has and only reports itself in the status line. */}
+    {loading && view === null && <ContextSkeleton label={t('loading')} />}
+    {noWorkspace && <EmptyState title={t('emptyWorkspace')} hint={t('emptyWorkspaceHint')} />}
+    {view && !noWorkspace && tab !== 'system' && <section role="tabpanel" id={`${tabId}-${tab}-panel`} aria-labelledby={`${tabId}-${tab}-tab`}>
       {tab === 'rule' && <p className={css.hint}>{t('candidate')}</p>}
       <div className={css.list}>{rows.map(row => <article className={css.row} key={`${row.kind}:${row.id}`}>
         <div className={css.rowBody}><strong>{row.name}</strong><p>{row.description}</p><div className={css.meta}>
           <Tag tone="quiet">{row.source}</Tag><span>{fileSizeText(row.size)}</span></div></div>
         <Button variant="outline" size="sm" onClick={() => { void openDocument(row) }}>{row.editable ? t('edit') : t('view')}</Button>
       </article>)}</div>
-      {!rows.length && <p className={css.empty}>{t('empty')}</p>}
+      {!shown && (searched && pool > 0
+        ? <EmptyState title={t('noMatch')} hint={t('noMatchHint')} />
+        : <EmptyState title={t('empty')} hint={t('emptyHint')} />)}
     </section>}
-    {view && tab === 'system' && <section role="tabpanel" id={`${tabId}-system-panel`} aria-labelledby={`${tabId}-system-tab`}>
+    {view && !noWorkspace && tab === 'system' && <section role="tabpanel" id={`${tabId}-system-panel`} aria-labelledby={`${tabId}-system-tab`}>
       <p className={css.hint}>{t('systemHint')}</p>
       {view.promptError && <p role="status" className={css.hint}>{t('promptError')} {view.promptError}</p>}
       <div className={css.list}>
@@ -142,16 +176,30 @@ export function ContextSection(props: Props) {
           <div className={css.meta}><span>{fileSizeText(new TextEncoder().encode(view.systemPrompt).length)}</span></div></div>
           <Button variant="outline" size="sm" onClick={() => setPrompt({ name: t('system'), text: view.systemPrompt, size: view.systemPrompt.length })}>{t('view')}</Button></article>}
       </div>
-      {!sections.length && !runtime.length && !view.systemPrompt && <p className={css.empty}>{t('empty')}</p>}
+      {!shown && (searched && pool > 0
+        ? <EmptyState title={t('noMatch')} hint={t('noMatchHint')} />
+        : <EmptyState title={t('empty')} hint={t('emptyHint')} />)}
     </section>}
-    <Modal open={!!document || !!prompt} title={document?.name ?? prompt?.name ?? ''} closeLabel={t('close')} onClose={close}
-      footer={<><Button variant="outline" onClick={close}>{t('close')}</Button>
+    {/* Transient state sits below the roster, so a refresh or a failure never
+        moves the rows the reader is looking at. */}
+    {loading && view !== null && <p role="status" className={css.hint}>{t('refreshing')}</p>}
+    {error && !dialogOpen && <div className={css.failure}>
+      <p role="alert">{error}</p>
+      <Button variant="outline" size="sm" onClick={reRead}>{t('retry')}</Button>
+    </div>}
+    {notice && !dialogOpen && <p role="status" className={css.notice}>{notice}</p>}
+    <Modal open={dialogOpen} title={document?.name ?? prompt?.name ?? ''} closeLabel={t('close')} onClose={close}
+      footer={<>
+        {/* The save result belongs beside the action that produced it: the page
+            level notice is behind the mask while this dialog is open. */}
+        {notice && <span role="status" className={css.notice}>{notice}</span>}
+        <Button variant="outline" onClick={close}>{t('close')}</Button>
         {document?.editable && <Button onClick={() => { void save() }} disabled={busy || draft === document.content}>{t(busy ? 'saving' : 'save')}</Button>}</>}>
       {document?.editable ? <textarea className={css.editor} aria-label={document.name} value={draft} disabled={busy}
         onChange={event => setDraft(event.currentTarget.value)} />
         : <pre className={css.preview}>{document?.content ?? prompt?.text ?? ''}</pre>}
       {document && !document.editable && <p className={css.hint}>{t('readOnly')}</p>}
-      {error && (document || prompt) && <p role="alert" className={css.error}>{error}</p>}
+      {error && dialogOpen && <p role="alert" className={css.error}>{error}</p>}
     </Modal>
   </div>
 }

@@ -1,15 +1,26 @@
 /*
- * The section renders straight into the settings column: that column already
- * owns the 24px inset and the scroll, so this page adds no second width,
- * centring or side padding of its own — the shape every built-in settings page
- * has (General, Plugins, Service Manager). Only the vertical rhythm is this
- * page's: a 20px stack, the same one the Service Manager page uses.
+ * The section renders straight into the settings column: the shell owns the
+ * 24px inset and the scroll, so this page declares a container and a reading
+ * cap of its own rather than a second page frame (BASELINE §3.3 — a settings
+ * section does not take the 960px first-level column). Layout decisions key off
+ * that container, not the window, because a wide window still leaves this
+ * column narrow when the settings panel keeps its two-column shell.
  */
-.page { display: flex; flex-direction: column; gap: 20px; width: 100%; color: var(--dsw-alias-label-primary); font-size: 13px; }
+.page {
+  container: context-manager / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 760px;
+  color: var(--dsw-alias-label-primary);
+  font: var(--dsw-font-xs-13);
+}
 
 .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-.header h2 { margin: 0 0 6px; font-size: 17px; font-weight: 600; }
-.header p { margin: 0; color: var(--dsw-alias-label-tertiary); font-size: 12px; line-height: 1.6; }
+.header h2 { margin: 0 0 6px; font: var(--dsw-font-l-20); }
+.header p { margin: 0; color: var(--dsw-alias-label-tertiary); font: var(--dsw-font-xxs-12); }
 .refresh { flex: none; white-space: nowrap; }
 
 .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -22,22 +33,81 @@
  * control from another product.
  */
 .tabs { display: flex; align-items: flex-end; gap: 22px; border-bottom: .5px solid var(--dsw-alias-border-l2); }
-.tab { position: relative; border: 0; padding: 7px 1px 9px; background: transparent; color: var(--dsw-alias-label-tertiary); font: inherit; font-size: 13px; line-height: 20px; cursor: pointer; }
+.tab { position: relative; border: 0; padding: 7px 1px 9px; background: transparent; color: var(--dsw-alias-label-tertiary); font: var(--dsw-font-xs-13); cursor: pointer; }
 .tab:hover, .tab[data-active='true'] { color: var(--dsw-alias-label-primary); }
-.tab[data-active='true']::after, .tab:focus-visible::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; border-radius: 2px 2px 0 0; background: var(--dsw-alias-label-primary); content: ''; }
-.tab:focus-visible { outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary)); outline-offset: 2px; border-radius: 2px; color: var(--dsw-alias-label-primary); }
+/*
+ * The active rail is 2px tall, so the 4px token is clamped by the browser to
+ * the rail's own height: one scale value covers both the rail and the focus
+ * ring's corner instead of a local 2px.
+ */
+.tab[data-active='true']::after, .tab:focus-visible::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; border-radius: var(--dsw-radius-xs); background: var(--dsw-alias-label-primary); content: ''; }
+.tab:focus-visible { outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary)); outline-offset: 2px; border-radius: var(--dsw-radius-xs); color: var(--dsw-alias-label-primary); }
 
 .list { display: flex; flex-direction: column; gap: 10px; }
-.row { display: flex; justify-content: space-between; align-items: center; gap: 16px; min-width: 0; padding: 12px 14px; border: .5px solid var(--dsw-alias-border-l2); border-radius: 10px; background: var(--dsw-alias-bg-layer-1); }
+
+/* One discoverable file: an independent content card, so R20 with the shared
+   hairline stroke. */
+.row { display: flex; justify-content: space-between; align-items: center; gap: 16px; min-width: 0; padding: 12px 14px; border: .5px solid var(--dsw-alias-border-l2); border-radius: var(--dsw-radius-xl); background: var(--dsw-alias-bg-layer-1); }
 .row > button { flex: none; white-space: nowrap; }
 .rowBody { min-width: 0; }
-.rowBody strong { font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
-.rowBody p { margin: 4px 0 0; color: var(--dsw-alias-label-secondary); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
-.meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 6px; font-size: 12px; color: var(--dsw-alias-label-tertiary); }
-.hint { margin: 0; color: var(--dsw-alias-label-tertiary); font-size: 12px; line-height: 1.6; }
-.empty { padding: 32px 0; color: var(--dsw-alias-label-tertiary); text-align: center; }
-.error { margin: 0; color: var(--dsw-alias-state-error-primary); overflow-wrap: anywhere; }
-.notice { margin: 0; color: var(--dsw-alias-state-success-primary); }
-.editor, .preview { box-sizing: border-box; width: min(700px, 100%); min-height: 280px; max-height: 60vh; overflow: auto; padding: 12px; border: .5px solid var(--dsw-alias-border-l2); border-radius: 8px; background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); font: 12px/1.5 var(--ds-font-family-code); white-space: pre-wrap; overflow-wrap: anywhere; }
-.editor:focus { outline: 2px solid var(--dsw-alias-state-business-primary); }
-@media (max-width: 560px) { .header { flex-direction: column; } .row { align-items: flex-start; } }
+.rowBody strong { font: var(--dsw-font-xs-13); font-weight: 600; overflow-wrap: anywhere; }
+.rowBody p { margin: 4px 0 0; color: var(--dsw-alias-label-secondary); font: var(--dsw-font-xxs-12); overflow-wrap: anywhere; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 6px; font: var(--dsw-font-xxs-12); color: var(--dsw-alias-label-tertiary); }
+
+.hint { margin: 0; color: var(--dsw-alias-label-tertiary); font: var(--dsw-font-xxs-12); }
+
+/* Empty states carry both lines: why this is empty and what to do next. */
+.empty { margin: 0; padding: 32px 0 0; color: var(--dsw-alias-label-tertiary); text-align: center; font: var(--dsw-font-xs-13); }
+.emptyHint { margin: 0; padding: 4px 0 32px; color: var(--dsw-alias-label-tertiary); text-align: center; font: var(--dsw-font-xxs-12); }
+
+.error { margin: 0; color: var(--dsw-alias-state-error-primary); font: var(--dsw-font-xxs-12); overflow-wrap: anywhere; }
+.notice { margin: 0; color: var(--dsw-alias-state-success-primary); font: var(--dsw-font-xxs-12); }
+
+/* A failed read keeps the last rendered roster and reports itself here, with
+   the retry beside it. */
+.failure { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.failure p { margin: 0; color: var(--dsw-alias-state-error-primary); font: var(--dsw-font-xs-13); overflow-wrap: anywhere; }
+
+/* First paint: placeholder cards shaped like the rows they replace. */
+.skeletonList { display: flex; flex-direction: column; gap: 10px; }
+.skeletonRow { display: flex; flex-direction: column; gap: 8px; padding: 15px 14px; border: .5px solid var(--dsw-alias-border-l2); border-radius: var(--dsw-radius-xl); background: var(--dsw-alias-bg-layer-1); }
+.skeletonBar { width: 40%; height: 13px; border-radius: var(--dsw-radius-xs); background: var(--dsw-alias-bg-skeleton); }
+.skeletonBar + .skeletonBar { width: 72%; height: 12px; }
+
+@keyframes context-skeleton-pulse {
+  0% { opacity: 1; }
+  40% { opacity: 0.55; }
+  80%, 100% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .skeletonBar { animation: context-skeleton-pulse 2s ease-in-out infinite; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeletonBar { animation: none; }
+}
+
+.visuallyHidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.editor, .preview { box-sizing: border-box; width: min(700px, 100%); min-height: 280px; max-height: 60vh; overflow: auto; padding: 12px; border: .5px solid var(--dsw-alias-border-l2); border-radius: var(--dsw-radius-lg); background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); font: 12px/18px var(--ds-font-family-code); white-space: pre-wrap; overflow-wrap: anywhere; }
+.editor:focus-visible { outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary)); outline-offset: 2px; }
+
+/* Compact layout by container width: at 520px the title and its refresh button
+   stop sharing a line, and rows stop centring their action beside the text. The
+   desktop settings column is ~560px, so it keeps the side-by-side form. */
+@container context-manager (max-width: 520px) {
+  .header { flex-direction: column; }
+  .row { align-items: flex-start; }
+}
+
+/* Whole rows and tab cells are the touch target, so a tap does not have to
+   land on the label itself. */
+@media (pointer: coarse) {
+  .row, .tab { min-height: 44px; }
+}
+
+/* iOS zooms the viewport when a focused text field renders below 16px. */
+@media (max-width: 600px) {
+  .editor { font-size: 16px; line-height: 24px; }
+}
